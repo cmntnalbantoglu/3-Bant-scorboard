@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="3 Bant">
+<meta name="theme-color" content="#0e0e10">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>3 Bant Bilardo</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0e0e10;
+  --surface: #1a1a1e;
+  --surface2: #242428;
+  --border: #2e2e34;
+  --p1: #e84545;
+  --p2: #3b82f6;
+  --green: #22c55e;
+  --yellow: #f59e0b;
+  --text: #f0f0f5;
+  --muted: #6b6b7a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  padding: 6px 6px 0;
+  gap: 4px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.header h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 4px;
+  color: var(--muted);
+}
+
+.header-author {
+  font-size: 0.6rem;
+  color: #444;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+.target-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.target-row input {
+  width: 46px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--yellow);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  padding: 3px 6px;
+  text-align: center;
+}
+
+.target-row input:focus { outline: 1px solid var(--yellow); }
+
+.target-label {
+  color: var(--yellow);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1rem;
+  letter-spacing: 1px;
+}
+
+/* ── Board ── */
+.board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 8px 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 14px 14px 0 0;
+}
+.card.p1::before { background: var(--p1); }
+.card.p2::before { background: var(--p2); }
+
+.card.active-turn {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px var(--green);
+}
+
+.card.winner {
+  border-color: var(--green);
+  background: rgba(34,197,94,0.07);
+}
+
+.turn-dot {
+  position: absolute;
+  top: 7px; right: 8px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  opacity: 0;
+  transition: opacity 0.25s;
+  box-shadow: 0 0 6px var(--green);
+}
+.card.active-turn .turn-dot { opacity: 1; }
+
+.player-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  text-align: center;
+  width: 100%;
+}
+.player-name:focus { outline: none; border-bottom: 1px dashed var(--border); color: var(--text); }
+
+.score-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3.5rem, 14vw, 5.5rem);
+  line-height: 1;
+  letter-spacing: 2px;
+}
+.card.p1 .score-num { color: var(--p1); }
+.card.p2 .score-num { color: var(--p2); }
+
+.prog-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.prog-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.35s ease;
+}
+.card.p1 .prog-fill { background: var(--p1); }
+.card.p2 .prog-fill { background: var(--p2); }
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.07s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+.btn-score:active { transform: scale(0.91); }
+
+.btn-minus {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.btn-plus.p1 { background: var(--p1); color: #fff; }
+.btn-plus.p2 { background: var(--p2); color: #fff; }
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.stat {
+  background: var(--surface2);
+  border-radius: 7px;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 0.58rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  line-height: 1.1;
+}
+
+.stat-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  line-height: 1.1;
+}
+.stat-val.hl { color: var(--yellow); }
+
+.btn-turn {
+  width: 100%;
+  padding: 7px 4px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+.btn-turn:active { border-color: var(--yellow); color: var(--yellow); }
+
+/* ── Controls ── */
+.controls {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 0 0 2px;
+}
+
+.btn-ctrl {
+  flex: 1;
+  padding: 8px 4px;
+  border-radius: 9px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  transition: all 0.18s;
+}
+.btn-ctrl:active { background: var(--surface2); color: var(--text); }
+.btn-ctrl.danger { border-color: rgba(232,69,69,0.35); color: var(--p1); }
+
+/* ── Footer ── */
+.footer {
+  text-align: center;
+  font-size: 0.6rem;
+  color: #333;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 3px 0 max(4px, env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+
+/* ── History Sheet ── */
+.history-sheet {
+  position: fixed;
+  bottom: -100%;
+  left: 0; right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: 18px 18px 0 0;
+  padding: 14px 14px 30px;
+  max-height: 60dvh;
+  overflow-y: auto;
+  z-index: 50;
+  transition: bottom 0.35s cubic-bezier(.32,1.1,.6,1);
+}
+.history-sheet.open { bottom: 0; }
+
+.sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 4px;
+  margin: 0 auto 12px;
+}
+
+.sheet-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.hist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface2);
+  border-radius: 9px;
+  padding: 9px 12px;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+}
+
+.hist-winner {
+  background: var(--green);
+  color: #000;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-bottom: 3px;
+  display: inline-block;
+}
+
+.hist-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+}
+
+.hist-empty {
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+  padding: 16px;
+}
+
+.sheet-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 40;
+}
+.sheet-overlay.show { display: block; }
+
+/* ── Win Modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--green);
+  border-radius: 18px;
+  padding: 28px 24px;
+  text-align: center;
+  width: 88%;
+  max-width: 340px;
+  box-shadow: 0 0 50px rgba(34,197,94,0.2);
+  animation: popIn 0.3s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes popIn { from { opacity:0; transform:scale(0.82); } to { opacity:1; transform:scale(1); } }
+
+.modal h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem;
+  letter-spacing: 4px;
+  color: var(--green);
+  margin-bottom: 4px;
+}
+
+.modal .win-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.modal-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.modal-stat {
+  background: var(--surface2);
+  border-radius: 9px;
+  padding: 9px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.modal-stat strong {
+  display: block;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.5rem;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+
+.modal-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--green);
+  border: none;
+  color: #000;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.modal-btn:active { opacity: 0.85; }
+
+/* ── Install Banner ── */
+.install-banner {
+  display: none;
+  position: fixed;
+  bottom: 60px;
+  left: 10px; right: 10px;
+  background: var(--surface);
+  border: 1px solid var(--green);
+  border-radius: 14px;
+  padding: 12px 14px;
+  z-index: 200;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  animation: slideUp 0.3s ease;
+}
+.install-banner.show { display: flex; }
+
+@keyframes slideUp { from { transform: translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+
+.install-banner p { flex: 1; font-size: 0.78rem; color: var(--text); line-height: 1.4; }
+.install-banner p span { color: var(--green); font-weight: 700; }
+
+.install-btn {
+  background: var(--green);
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 8px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.close-banner {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>🎱 3 BANT</h1>
+    <div class="header-author">Mehmet Nalbantoğlu</div>
+  </div>
+  <div class="target-row">
+    <span>Hedef:</span>
+    <input type="number" id="target-input" value="15" min="1" max="999"
+           onchange="applyTarget()" oninput="applyTarget()">
+    <span class="target-label" id="target-label">/ 15</span>
+  </div>
+</div>
+
+<!-- Board -->
+<div class="board">
+
+  <div class="card p1" id="card-1">
+    <div class="turn-dot"></div>
+    <input class="player-name" value="Oyuncu 1">
+    <div class="score-num" id="p1-score">0</div>
+    <div class="prog-bar"><div class="prog-fill" id="p1-bar" style="width:0%"></div></div>
+    <div class="btn-row">
+      <button class="btn-score btn-minus" onclick="changeScore(1,-1)">−</button>
+      <button class="btn-score btn-plus p1" onclick="changeScore(1,1)">+</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Istaka</div><div class="stat-val" id="p1-inn">0</div></div>
+      <div class="stat"><div class="stat-label">Ort.</div><div class="stat-val" id="p1-avg">0.00</div></div>
+      <div class="stat"><div class="stat-label">Seri</div><div class="stat-val hl" id="p1-run">0</div></div>
+      <div class="stat"><div class="stat-label">HR</div><div class="stat-val" id="p1-hr">0</div></div>
+    </div>
+    <button class="btn-turn" onclick="endTurn(1)">⛶ Kaçırdı / Sıra Geçir</button>
+  </div>
+
+  <div class="card p2" id="card-2">
+    <div class="turn-dot"></div>
+    <input class="player-name" value="Oyuncu 2">
+    <div class="score-num" id="p2-score">0</div>
+    <div class="prog-bar"><div class="prog-fill" id="p2-bar" style="width:0%"></div></div>
+    <div class="btn-row">
+      <button class="btn-score btn-minus" onclick="changeScore(2,-1)">−</button>
+      <button class="btn-score btn-plus p2" onclick="changeScore(2,1)">+</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Istaka</div><div class="stat-val" id="p2-inn">0</div></div>
+      <div class="stat"><div class="stat-label">Ort.</div><div class="stat-val" id="p2-avg">0.00</div></div>
+      <div class="stat"><div class="stat-label">Seri</div><div class="stat-val hl" id="p2-run">0</div></div>
+      <div class="stat"><div class="stat-label">HR</div><div class="stat-val" id="p2-hr">0</div></div>
+    </div>
+    <button class="btn-turn" onclick="endTurn(2)">⛶ Kaçırdı / Sıra Geçir</button>
+  </div>
+
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <button class="btn-ctrl" onclick="undoLast()">↩ Geri Al</button>
+  <button class="btn-ctrl" onclick="openHistory()">📋 Geçmiş</button>
+  <button class="btn-ctrl danger" onclick="resetGame()">✕ Sıfırla</button>
+</div>
+
+<!-- Footer -->
+<div class="footer">🎱 &nbsp; Ücretsizdir &nbsp; · &nbsp; Mehmet Nalbantoğlu</div>
+
+<!-- History Sheet -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="closeHistory()"></div>
+<div class="history-sheet" id="history-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">MAÇ GEÇMİŞİ</div>
+  <div id="history-list"><div class="hist-empty">Henüz tamamlanan maç yok.</div></div>
+</div>
+
+<!-- Win Modal -->
+<div class="modal-overlay" id="win-modal">
+  <div class="modal">
+    <h2>🎱 KAZANDI!</h2>
+    <div class="win-name" id="modal-winner"></div>
+    <div class="modal-stats" id="modal-stats"></div>
+    <button class="modal-btn" onclick="closeWinModal()">Yeni Maç Başlat</button>
+  </div>
+</div>
+
+<!-- Install Banner -->
+<div class="install-banner" id="install-banner">
+  <p>📲 Bu uygulamayı telefona ekle — <span>tam uygulama gibi çalışır!</span></p>
+  <button class="install-btn" id="install-btn">Yükle</button>
+  <button class="close-banner" onclick="closeBanner()">✕</button>
+</div>
+
+<script>
+// ── PWA Install ──
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').classList.add('show');
+});
+
+document.getElementById('install-btn').addEventListener('click', function() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function() {
+    deferredPrompt = null;
+    closeBanner();
+  });
+});
+
+window.addEventListener('appinstalled', function() { closeBanner(); });
+
+function closeBanner() {
+  document.getElementById('install-banner').classList.remove('show');
+}
+
+// ── Service Worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js').catch(function() {});
+  });
+}
+
+// ── Game State ──
+var target = 15;
+var activeTurn = 1;
+var players = {
+  1: { score: 0, innings: 0, hr: 0, currentRun: 0 },
+  2: { score: 0, innings: 0, hr: 0, currentRun: 0 }
+};
+var lastAction = null;
+var matchHistory = [];
+
+function applyTarget() {
+  var val = parseInt(document.getElementById('target-input').value);
+  if (!isNaN(val) && val > 0) {
+    target = val;
+    document.getElementById('target-label').textContent = '/ ' + target;
+    updateDisplay(1);
+    updateDisplay(2);
+  }
+}
+
+function changeScore(playerNum, amount) {
+  if (playerNum !== activeTurn) return;
+  var p = players[playerNum];
+  lastAction = { playerNum: playerNum, type: 'score', before: Object.assign({}, p), prevTurn: activeTurn };
+
+  if (amount > 0) {
+    if (p.innings === 0) p.innings = 1;
+    p.score += amount;
+    p.currentRun += amount;
+    if (p.currentRun > p.hr) p.hr = p.currentRun;
+  } else if (amount < 0 && p.score > 0) {
+    p.score += amount;
+    if (p.currentRun > 0) p.currentRun += amount;
+  }
+
+  updateDisplay(playerNum);
+  checkWin(playerNum);
+}
+
+function endTurn(playerNum) {
+  if (playerNum !== activeTurn) return;
+  var p = players[playerNum];
+  lastAction = { playerNum: playerNum, type: 'turn', before: Object.assign({}, p), prevTurn: activeTurn };
+
+  p.innings = p.innings === 0 ? 1 : p.innings + 1;
+  p.currentRun = 0;
+  updateDisplay(playerNum);
+
+  activeTurn = playerNum === 1 ? 2 : 1;
+  updateTurnHighlight();
+}
+
+function updateTurnHighlight() {
+  document.getElementById('card-1').classList.toggle('active-turn', activeTurn === 1);
+  document.getElementById('card-2').classList.toggle('active-turn', activeTurn === 2);
+}
+
+function undoLast() {
+  if (!lastAction) return;
+  players[lastAction.playerNum] = Object.assign({}, lastAction.before);
+  if (lastAction.prevTurn !== undefined) activeTurn = lastAction.prevTurn;
+  updateDisplay(lastAction.playerNum);
+  updateTurnHighlight();
+  lastAction = null;
+}
+
+function updateDisplay(n) {
+  var p = players[n];
+  var avg = p.innings > 0 ? (p.score / p.innings).toFixed(3) : '0.000';
+  var pct = Math.min((p.score / target) * 100, 100);
+
+  document.getElementById('p' + n + '-score').textContent = p.score;
+  document.getElementById('p' + n + '-inn').textContent = p.innings;
+  document.getElementById('p' + n + '-avg').textContent = avg;
+  document.getElementById('p' + n + '-run').textContent = p.currentRun;
+  document.getElementById('p' + n + '-hr').textContent = p.hr;
+  document.getElementById('p' + n + '-bar').style.width = pct + '%';
+}
+
+function checkWin(n) {
+  if (players[n].score >= target) showWinModal(n);
+}
+
+function showWinModal(n) {
+  var p = players[n];
+  var names = document.querySelectorAll('.player-name');
+  var winnerName = names[n - 1].value || ('Oyuncu ' + n);
+  var opp = n === 1 ? 2 : 1;
+
+  document.getElementById('modal-winner').textContent = winnerName;
+  document.getElementById('modal-stats').innerHTML =
+    '<div class="modal-stat"><strong>' + p.score + '</strong>Toplam Skor</div>' +
+    '<div class="modal-stat"><strong>' + p.innings + '</strong>Istaka</div>' +
+    '<div class="modal-stat"><strong>' + (p.score / Math.max(p.innings,1)).toFixed(3) + '</strong>Ortalama</div>' +
+    '<div class="modal-stat"><strong>' + p.hr + '</strong>En Yüksek Seri</div>';
+
+  document.getElementById('win-modal').classList.add('show');
+  document.getElementById('card-' + n).classList.add('winner');
+
+  var time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  matchHistory.unshift({
+    winner: winnerName,
+    s1: n === 1 ? p.score : players[opp].score,
+    s2: n === 2 ? p.score : players[opp].score,
+    name1: names[0].value || 'Oyuncu 1',
+    name2: names[1].value || 'Oyuncu 2',
+    time: time
+  });
+  renderHistory();
+}
+
+function closeWinModal() {
+  document.getElementById('win-modal').classList.remove('show');
+  resetGame(true);
+}
+
+function renderHistory() {
+  var el = document.getElementById('history-list');
+  if (!matchHistory.length) {
+    el.innerHTML = '<div class="hist-empty">Henüz tamamlanan maç yok.</div>';
+    return;
+  }
+  el.innerHTML = matchHistory.map(function(m) {
+    return '<div class="hist-item">' +
+      '<div><span class="hist-winner">🏆 ' + m.winner + '</span>' +
+      '<div style="color:var(--muted);font-size:0.72rem;margin-top:2px">' + m.name1 + ' vs ' + m.name2 + ' · ' + m.time + '</div></div>' +
+      '<div class="hist-score">' + m.s1 + ' – ' + m.s2 + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function openHistory() {
+  document.getElementById('history-sheet').classList.add('open');
+  document.getElementById('sheet-overlay').classList.add('show');
+}
+
+function closeHistory() {
+  document.getElementById('history-sheet').classList.remove('open');
+  document.getElementById('sheet-overlay').classList.remove('show');
+}
+
+function resetGame(skipConfirm) {
+  if (!skipConfirm && !confirm('Mevcut maçı sıfırlamak istediğinize emin misiniz?')) return;
+  players = {
+    1: { score: 0, innings: 0, hr: 0, currentRun: 0 },
+    2: { score: 0, innings: 0, hr: 0, currentRun: 0 }
+  };
+  lastAction = null;
+  activeTurn = 1;
+  document.getElementById('card-1').classList.remove('winner');
+  document.getElementById('card-2').classList.remove('winner');
+  updateDisplay(1);
+  updateDisplay(2);
+  updateTurnHighlight();
+}
+
+applyTarget();
+updateTurnHighlight();
+</script>
+</body>
+</html>
